@@ -5,7 +5,7 @@ NUM_SAMPLES=10
 BATCH_SIZE=1
 TEMPERATURE=1.0
 
-IDS_FILE="../../constants/ids_train_val_test.json"
+IDS_FILE="../../../constants/ids_train_val_test.json"
 JSON_CONTENT=$(cat "$IDS_FILE")
 
 python generate_hf_gpt.py \

@@ -9,7 +9,7 @@ MAX_NEW_TOKENS=2048
 IFS='/' read -r MODEL_FAMILY MODEL_NAME <<< "$MODEL_PATH"
 GENERATED_BY="${MODEL_PATH//\//--}" # replace / with --
 
-IDS_FILE="../../constants/ids_train_val_test.json"
+IDS_FILE="../../../constants/ids_train_val_test.json"
 JSON_CONTENT=$(cat "$IDS_FILE")
 
 CUDA_VISIBLE_DEVICES=$DEVICE python generate_hf.py \
