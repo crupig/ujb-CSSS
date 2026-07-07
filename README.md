@@ -141,3 +141,20 @@ To run evaluation for the CoderUJB benchmark.
 Example of command to run the scripts (input file as argument):
 
 ```bash run_eval.sh ./path_to_generation_file.json```
+
+### Testcases generation:
+
+**Replace scripts**:
+
+Replace all the scripts in `scripts_to_replace_testcases`. Each file to be replace starts with the path where it has to be replaced.
+
+```bash run_gen_tests.sh <DEVICE_ID> <MODEL_PATH>```
+
+For example:
+
+```bash run_gen_tests.sh 0 Qwen/Qwen2.5-Coder-3B-Instruct```
+
+**To execute tests:**
+
+```bash run_eval_tests.sh ./path_to_generation_file.jsonl```
+
