@@ -1,7 +1,7 @@
 import os
 import re
 
-from code_ujb.Task import Task
+from Task import Task
 from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoTokenizer

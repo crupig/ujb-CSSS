@@ -78,21 +78,30 @@ def chat_compeletion_openai(model, conv, temperature, max_tokens):
 def reorg_output_file(save_generations_path, num_samples):
     def merged_output(a, b):
         a["outputs"].extend(b["outputs"])
+        a["log_probabilities"].extend(b["log_probabilities"])
+        a["patch"].extend(b["patch"])
         return a
     """Sort by question id and de-duplication"""
     answers = {}
+    fail_messages = []
     with open(save_generations_path+".tmp", "r") as fin:
-        for l in fin:
-            output = json.loads(l)
-            tid = output["task_id"]
-            if tid not in answers:
-                answers[tid] = output
-            else:
-                answers[tid] = merged_output(answers[tid], output)
+        for i, l in enumerate(fin):
+            try:
+                output = json.loads(l)
+                tid = output["task_id"]
+                if tid not in answers:
+                    answers[tid] = output
+                else:
+                    answers[tid] = merged_output(answers[tid], output)
+            except json.decoder.JSONDecodeError:
+                fail_messages.append(f"Line {i} is not valid JSON. Please check: {save_generations_path}.tmp")
 
     qids = sorted(list(answers.keys()))
     answers = [answers[qid] for qid in qids]
     for answer in answers:
         answer["outputs"] = answer["outputs"][:num_samples]
+        answer["log_probabilities"] = answer["log_probabilities"][:num_samples]
+        answer["patch"] = answer["patch"][:num_samples]
     
     json.dump(answers, open(save_generations_path, "w"), indent=4)
+    return fail_messages

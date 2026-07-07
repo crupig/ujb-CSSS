@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import chardet
 import javalang
 import numpy as np
-from code_ujb.Task import Task, clean_signature
+from Task import Task, clean_signature
 from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoTokenizer

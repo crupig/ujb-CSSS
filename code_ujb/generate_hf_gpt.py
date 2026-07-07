@@ -2,12 +2,14 @@
 import argparse
 import json
 import os
+import re
 import random
 import time
 import ast
 
 import torch
 from tqdm import tqdm
+import openai
 
 from fastchat.model import load_model, get_conversation_template
 from fastchat.utils import str_to_torch_dtype
@@ -132,20 +134,11 @@ def get_model_answers(
     ids_subset
 ):
     save_generations_path = save_generations_path + ".tmp"
-    model, tokenizer = load_model(
-        model_path,
-        device="cuda",
-        num_gpus=num_gpus_per_model,
-        max_gpu_memory=max_gpu_memory,
-        dtype=dtype,
-        load_8bit=False,
-        cpu_offloading=False,
-        debug=False,
-    )
-    
+
     tasks_outputs = []
     for task in tqdm(all_tasks):
         task_idx = task["task_idx"]
+
         if task_idx not in ids_subset and ids_subset is not None:
             continue
         # torch.manual_seed(task_idx) # commenting this line to introduce randomness in generations across different runs
@@ -160,74 +153,31 @@ def get_model_answers(
         else:
             raise NotImplementedError
 
-        input_ids = tokenizer([prompt]).input_ids
-        attention_mask = tokenizer([prompt]).attention_mask
-        
-        if len(input_ids[0]) > max_input_tokens:
-            if gen_mode == "complete":
-                input_ids[0] = input_ids[0][-max_input_tokens:]
-                attention_mask[0] = attention_mask[0][-max_input_tokens:]
-            else:
-                input_ids[0] = input_ids[0][:max_input_tokens]
-                attention_mask[0] = attention_mask[0][:max_input_tokens]
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful Java code assistant. Implement the requested method in a ```java``` code block. Only include the code for the method, and do not include any explanations or other text."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=temperature,
+            max_tokens=max_new_tokens,
+            top_p=0.95,
+        )
 
-        if temperature < 1e-4:
-            do_sample = False
+        # post-process
+        raw_output = response["choices"][0]["message"]["content"]
+        pattern = r"```java(.*?)```"
+        match = re.search(pattern, raw_output, re.DOTALL)
+        if match:
+            patch = match.group(1).strip()
         else:
-            do_sample = True
-
-        # some models may error out when generating long outputs
-        try:
-            gen_outputs = model.generate(
-                input_ids=torch.as_tensor(input_ids).cuda(),
-                attention_mask=torch.as_tensor(attention_mask).cuda(),
-                do_sample=do_sample,
-                temperature=temperature,
-                top_p=0.95,
-                max_new_tokens=max_new_tokens,
-                num_return_sequences=batch_size,
-                return_dict_in_generate=True,
-                output_scores=True
-            )
-            # generated token ids
-            output_ids_list = gen_outputs.sequences
-            # convert logits -> logprobs for each token
-            logprobs_per_step = [
-                score.log_softmax(dim=-1) for score in gen_outputs.scores
-            ]
-            # collect logprobs of the actually generated tokens
-            log_probabilities = []
-            for step, logprob_step in enumerate(logprobs_per_step):
-                # extract the generated token at this time step for each batch element
-                token_ids = output_ids_list[:, torch.as_tensor(input_ids).shape[1] + step]
-                step_logprobs = logprob_step.gather(1, token_ids.unsqueeze(-1)).squeeze(-1)
-                log_probabilities.append(step_logprobs)
-            
-            if gen_mode == "complete":
-                outputs = tokenizer.batch_decode(output_ids_list, skip_special_tokens=True)
-            elif gen_mode == "chat":
-                outputs = process_chat_output(input_ids=input_ids, output_ids_list=output_ids_list, 
-                                            tokenizer=tokenizer, conv=conv)
-            else:
-                raise NotImplementedError
-
-            # extracting only the log probabilities of the tokens of the generated method
-            log_probabilities = torch.stack(log_probabilities, dim=1).tolist()
-            log_probabilities = task_bench.postprocess_complete_log_probabilities(
-                log_probabilities,
-                task_idx,
-                outputs,
-                tokenizer
-            )
-            # post processing outputs so we store only the model's response and not the full prompt+response
-            completion = task_bench.postprocess_complete_generation(outputs[0], task["task_idx"], stop_at_function=False) if gen_mode == "complete" else task_bench.postprocess_chat_generation(outputs, task["task_idx"])
-            patch = task_bench.postprocess_complete_generation(outputs[0], task["task_idx"]) if gen_mode == "complete" else completion
-            
-        except RuntimeError as e:
-            print("ERROR question ID: ", task["task_idx"])
-            print(e)
-            outputs = ["ERROR"] * batch_size
-            log_probabilities = ["ERROR"] * batch_size
+            patch = '-'
 
         function_name = json.loads(open("./constants/taskid_methodname.json").read())[str(task["task_idx"])]
         
@@ -236,9 +186,9 @@ def get_model_answers(
                               "generated_by": args.model_path.split("/")[-1],
                               "prompt": prompt,
                               "function_name": function_name,
-                              "outputs": [completion],
+                              "outputs": [raw_output],
                               "patch": [patch],
-                              "log_probabilities": log_probabilities,
+                              "log_probabilities": [[1.0]],
                               "gen_mode": gen_mode,
                               "temperature": temperature,
                               "max_new_tokens": max_new_tokens,
@@ -316,12 +266,12 @@ if __name__ == "__main__":
         help="A debug option. The begin index of questions.",
         default=-1
     )
+    parser.add_argument("--all_ids_dict", default=None, type=str)
+    parser.add_argument("--split", choices=["train", "test", "val", "all"], type=str, help="Subset of the data to run on (train/val/test/all).")
     parser.add_argument(
         "--question-end", type=int, help="A debug option. The end index of questions.",
         default=-1
     )
-    parser.add_argument("--all_ids_dict", default=None, type=str)
-    parser.add_argument("--split", choices=["train", "test", "val", "all"], type=str, help="Subset of the data to run on (train/val/test/all).")
     parser.add_argument("--save-generations-path", type=str, help="The output answer file.")
     parser.add_argument("--temperature", type=float, help="temperature.", default=0.2)
     parser.add_argument(

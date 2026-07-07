@@ -2,13 +2,10 @@ import argparse
 import json
 import time
 
-from code_ujb import tasks
+import tasks
 
 def run_evaluate(
-    model_path,
-    model_id,
     bench_name,
-    gen_mode,
     question_begin,
     question_end,
     generations_file,
@@ -26,51 +23,15 @@ def run_evaluate(
     if num_samples:
         for idx in range(len(generations)):
             generations[idx]["outputs"] = generations[idx]["outputs"][:num_samples]
-            
-    if gen_mode == "complete":
-        for generation in generations:
-            outputs = task_bench.postprocess_complete_generations(generation["outputs"], generation["task_idx"])
-            inputs = [task_bench.get_prompt_byidx(generation["task_idx"], mode="complete")]*len(outputs)
-            raw_outputs = []
-            for _input, pure_output, output in zip(inputs, outputs, generation["outputs"]):
-                output.replace(_input, "")
-                try:
-                    index = output.index(pure_output)
-                    raw_outputs.append(output[:index]+pure_output)
-                except ValueError:
-                    raw_outputs.append(output)
-            generation["inputs"] = inputs
-            generation["outputs"] = outputs
-            generation["raw_outputs"] = raw_outputs
-            
-    elif gen_mode == "chat":
-        for generation in generations:
-            outputs = task_bench.postprocess_chat_generations(generation["outputs"], generation["task_idx"])
-            inputs = [task_bench.get_prompt_byidx(generation["task_idx"], mode="chat")]*len(generation["outputs"])
-            raw_outputs = []
-            for _input, pure_output, output in zip(inputs, outputs, generation["outputs"]):
-                output.replace(_input, "")
-                try:
-                    index = output.index(pure_output)
-                    raw_outputs.append(output[:index]+pure_output)
-                except ValueError:
-                    raw_outputs.append(output)
-            generation["inputs"] = inputs
-            generation["outputs"] = outputs
-            generation["raw_outputs"] = raw_outputs
-    else:
-        raise NotImplementedError()
-    
-    json.dump(generations, open(generations_file.replace(".json", "-postprocess.json"), "w"), indent=4)
-            
+                    
     start_time = time.time()
     result = task_bench.evaluate(generations)
     end_time = time.time()
-    result["time_cost"] = end_time - start_time
-    result["end_time"] = end_time
-    print(json.dumps(result, indent=4))
-    json.dump(result, open(output_file, "w"), indent=4)
-    return result
+    
+    final_results = {"time_cost": end_time - start_time, "end_time": end_time}
+    final_results["test_output"] = result
+    json.dump(final_results, open(output_file, "w"), indent=4)
+    return final_results
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -112,17 +73,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-samples",
         type=int,
-        default=1,
+        default=None,
         help="How many completion choices to generate.",
     )
 
     args = parser.parse_args()
     
     run_evaluate(
-        model_path=args.model_path,
-        model_id=args.model_id,
         bench_name=args.bench_name,
-        gen_mode=args.gen_mode,
         question_begin=args.question_begin,
         question_end=args.question_end,
         generations_file=args.load_generations_path,
