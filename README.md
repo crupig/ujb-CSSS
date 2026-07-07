@@ -156,5 +156,5 @@ For example:
 
 **To execute tests:**
 
-```bash run_eval_tests.sh ./path_to_generation_file.jsonl```
+```bash run_eval_tests.sh ./path_to_generation_file.json```
 
