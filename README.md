@@ -110,3 +110,34 @@ e.g.,
 python code_ujb/evaluate.py --model-path gpt-3.5-turbo --model-id gpt-3.5-turbo --gen-mode chat --bench-name codeujbcomplete --num-samples 10 --load-generations-path log/gpt-3.5-turbo/codeujbcomplete/generations-chat.jsonl --eval-output-path ./log/gpt-3.5-turbo/codeujbcomplete/evaluation-chat.json
 ```
 The evaluation results will be saved to `./log/gpt-3.5-turbo/codeujbcomplete/evaluation-chat.json`
+
+## Notes for replication of "Comparative Study of Selection Strategies"
+This repo was created as a support generation tool for the work **"How Should We Rank LLM Code Generations? A Comparative Study of  Selection Strategies"**. It was modified so that also the log probabilities of the generated tokens are extracted. Also the evaluation scripts were modified to extract the test execution feedbacks.
+
+**To setup:**
+* clone the repo;
+* create virtual environment;
+* install `requirements.txt` (designed to work on Python `3.10.19`)
+
+### Code generation:
+
+```bash run_gen.sh <DEVICE_ID> <MODEL_PATH>```
+
+For example:
+
+```bash run_gen.sh 0 Qwen/Qwen2.5-Coder-3B-Instruct```
+
+**Evaluation:**
+
+To run evaluation for the CoderUJB benchmark.
+
+- clone this repo and the defect4j repo in the same folder.
+- switch to Java 11 with: `export JAVA_HOME=$(/usr/libexec/java_home -v11)`
+- initialize defect4j: `cd defect4j` and run `./init.sh`
+- Add Defects4J's executables to your PATH with: `export PATH=$PATH:"path2defects4j"/framework/bin`
+- go to ujb/code_ujb and activate virtual environment:
+- run: `run_eval.sh`
+
+Example of command to run the scripts (input file as argument):
+
+```bash run_eval.sh ./path_to_generation_file.json```
