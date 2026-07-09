@@ -112,9 +112,15 @@ python code_ujb/evaluate.py --model-path gpt-3.5-turbo --model-id gpt-3.5-turbo 
 The evaluation results will be saved to `./log/gpt-3.5-turbo/codeujbcomplete/evaluation-chat.json`
 
 ## Notes for replication of "Comparative Study of Selection Strategies"
-This repo was created as a support generation tool for the work **"How Should We Rank LLM Code Generations? A Comparative Study of  Selection Strategies"**. It was modified so that also the log probabilities of the generated tokens are extracted. Also the evaluation scripts were modified to extract the test execution feedbacks.
+This repo was created as a support generation tool for the work **"How Should We Rank LLM Code Generations? A Comparative Study of  Selection Strategies"**. 
 
-**To setup:**
+The original code generation framework has been modified in order to:
+* extract the log-probabilities when generating code solutions;
+* extracting test execution feedbacks when evaluting the generated solutions;
+* generate test cases instead of code solutions (for the CodeT approach);
+* run the generated test cases against the previously generated code solutions.
+
+### To setup:
 * clone the repo;
 * create virtual environment;
 * install `requirements.txt` (designed to work on Python `3.10.19`)
@@ -142,7 +148,7 @@ Example of command to run the scripts (input file as argument):
 
 ```bash run_eval.sh ./path_to_generation_file.json```
 
-### Testcases generation:
+### Test cases generation (CodeT approach):
 
 **Replace scripts**:
 
