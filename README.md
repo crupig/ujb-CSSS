@@ -127,11 +127,11 @@ The original code generation framework has been modified in order to:
 
 ### Code generation:
 
-```bash run_gen.sh <DEVICE_ID> <MODEL_PATH>```
+```bash code_ujb/run_gen.sh <DEVICE_ID> <MODEL_PATH>```
 
 For example:
 
-```bash run_gen.sh 0 Qwen/Qwen2.5-Coder-3B-Instruct```
+```bash code_ujb/run_gen.sh 0 Qwen/Qwen2.5-Coder-3B-Instruct```
 
 **Evaluation:**
 
@@ -142,11 +142,11 @@ To run evaluation for the CoderUJB benchmark.
 - initialize defect4j: `cd defect4j` and run `./init.sh`
 - Add Defects4J's executables to your PATH with: `export PATH=$PATH:"path2defects4j"/framework/bin`
 - go to ujb/code_ujb and activate virtual environment:
-- run: `run_eval.sh`
+- run: `code_ujb/run_eval.sh`
 
 Example of command to run the scripts (input file as argument):
 
-```bash run_eval.sh ./path_to_generation_file.json```
+```bash code_ujb/run_eval.sh ./path_to_generation_file.json```
 
 ### Test cases generation (CodeT approach):
 
@@ -154,11 +154,11 @@ Example of command to run the scripts (input file as argument):
 
 Replace all the scripts in `scripts_to_replace_testcases`. Each file to be replace starts with the path where it has to be replaced.
 
-```bash run_gen_tests.sh <DEVICE_ID> <MODEL_PATH>```
+```bash code_ujb/run_gen_tests.sh <DEVICE_ID> <MODEL_PATH>```
 
 For example:
 
-```bash run_gen_tests.sh 0 Qwen/Qwen2.5-Coder-3B-Instruct```
+```bash code_ujb/run_gen_tests.sh 0 Qwen/Qwen2.5-Coder-3B-Instruct```
 
 **To execute tests:**
 
@@ -170,4 +170,4 @@ Afterwards, within each model (generator) and each coding problem (task id), we 
 
 After generating all the pairs, the tests can be run with:
 
-```bash run_eval_tests.sh ./path_to_generation_file.json```
+```bash code_ujb/run_eval_tests.sh ./path_to_generation_file.json```
