@@ -162,5 +162,12 @@ For example:
 
 **To execute tests:**
 
-```bash run_eval_tests.sh ./path_to_generation_file.json```
+The models are in charge of generating test suites with multiple (up to 10) test cases (methods). Therefore, we have to postprocess the output of the models in order to isolate each tst method into a separate test file. This is done in `knowlbase_tests.py`.
 
+Afterwards, within each model (generator) and each coding problem (task id), we have to run each generated code solution against each generated test case.
+
+`merge_generations_and_tests_b4_test_exec.py` creates and saves all the `<code_solution, test_statement>` pairs.
+
+After generating all the pairs, the tests can be run with:
+
+```bash run_eval_tests.sh ./path_to_generation_file.json```
